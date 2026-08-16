@@ -1,0 +1,54 @@
+# ==============================================================================
+# Mobius Agent Harness Configuration
+# ==============================================================================
+
+# Default model used if none is specified
+default_model = "deepseek-chat"
+
+# ------------------------------------------------------------------------------
+# Provider Registry
+# ------------------------------------------------------------------------------
+
+
+
+[providers.deepseek]
+name = "DeepSeek"
+type = "openai"
+base_url = "https://api.deepseek.com/v1"
+env_key = "DEEPSEEK_API_KEY"
+models = ["deepseek-chat", "deepseek-reasoner"]
+
+
+
+[providers.openai]
+name = "OpenAI"
+type = "openai"
+base_url = "https://api.openai.com/v1"
+env_key = "OPENAI_API_KEY"
+models = ["gpt-4o", "gpt-4o-mini", "o3-mini"]
+
+
+
+[providers.anthropic]
+name = "Anthropic"
+type = "anthropic"
+base_url = "https://api.anthropic.com/v1"
+env_key = "ANTHROPIC_API_KEY"
+models = ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022"]
+
+
+
+[providers.gemini]
+name = "Google Gemini"
+type = "gemini"
+base_url = "https://generativelanguage.googleapis.com/v1beta"
+env_key = "GEMINI_API_KEY"
+models = ["gemini-2.5-pro", "gemini-2.5-flash"]
+
+
+
+[providers.ollama]
+name = "Ollama (Local)"
+type = "openai"
+base_url = "http://localhost:11434/v1"
+models = ["llama3", "qwen2.5-coder", "deepseek-r1"]
