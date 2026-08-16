@@ -24,6 +24,42 @@ type OpenAIProvider struct {
 	Client  *http.Client
 }
 
+
+// Internal response unmarshaling structs
+type openAIFunctionCall struct {
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
+}
+
+type openAIToolCall struct {
+	ID       string             `json:"id"`
+	Type     string             `json:"type"`
+	Function openAIFunctionCall `json:"function"`
+}
+
+
+// Internal response unmarshaling structs
+type openAIMessage struct {
+	Content   string           `json:"content"`
+	ToolCalls []openAIToolCall `json:"tool_calls,omitempty"`
+}
+
+type openAIChoice struct {
+	Message openAIMessage `json:"message"`
+}
+
+type openAIResponse struct {
+	Choices []openAIChoice `json:"choices"`
+}
+
+
+
+
+
+
+
+
+
 // NewOpenAIProvider creates and configures a new OpenAI-compatible provider.
 func NewOpenAIProvider(apiKey, baseURL string) *OpenAIProvider {
 	if baseURL == "" {
@@ -86,20 +122,23 @@ func (p *OpenAIProvider) Generate(ctx context.Context, req *ChatRequest) (*ChatR
 		return nil, fmt.Errorf("no response choices returned from LLM")
 	}
 
+	msg := result.Choices[0].Message
+
+	var toolCalls []ToolCall
+	for _ , tc := range msg.ToolCalls {
+		toolCalls = append(toolCalls, ToolCall{
+			ID:        tc.ID,
+			Type:      "function",
+			Function: FunctionCall{
+				Name:     tc.Function.Name,
+				Arguments: tc.Function.Arguments,
+			},
+		})
+	}
+
 	return &ChatResponse{
-		Content: result.Choices[0].Message.Content,
+		Content:   msg.Content,
+		ToolCalls: toolCalls,
 	}, nil
 }
 
-// Internal response unmarshaling structs
-type openAIMessage struct {
-	Content string `json:"content"`
-}
-
-type openAIChoice struct {
-	Message openAIMessage `json:"message"`
-}
-
-type openAIResponse struct {
-	Choices []openAIChoice `json:"choices"`
-}

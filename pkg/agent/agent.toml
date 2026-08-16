@@ -1,0 +1,7 @@
+# ==============================================================================
+# Agent Execution Limits & Budget
+# ==============================================================================
+[agent]
+max_steps = 25              # Maximum Reason-Act-Observe iterations
+max_cost = 2.00             # Maximum spend budget in USD
+timeout_seconds = 300       # Maximum wall-clock time in seconds (300s = 5m)
