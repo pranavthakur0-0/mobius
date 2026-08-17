@@ -1,84 +1,145 @@
 package cli
 
 import (
-	"bufio"
 	"fmt"
+	"os"
+	"strings"
+
 	"mobius/pkg/agent"
 	"mobius/pkg/llm"
 	"mobius/pkg/session"
 	"mobius/pkg/tools"
-	"os"
-	"strings"
+
+	"github.com/charmbracelet/x/term"
 )
 
-func StartREPL(sm *session.Manager, registry *tools.Registry, cfg *llm.Config) {
-	scanner := bufio.NewScanner(os.Stdin)
-	if scanner.Err() != nil {
-		return
+func readPrompt(prompt string) (string, bool) {
+	fmt.Print(prompt)
+	fd := os.Stdin.Fd()
+	oldState, err := term.MakeRaw(fd)
+	if err != nil {
+		return "", false
 	}
+	defer term.Restore(fd, oldState)
+
+	var input []rune
+	buf := make([]byte, 1)
 
 	for {
-		fmt.Print("mobius > ")
+		_, err = os.Stdin.Read(buf)
+		if err != nil {
+			return "", false
+		}
 
-		if !scanner.Scan() {
+		b := buf[0]
+
+		// Enter key
+		if b == '\r' || b == '\n' {
+			fmt.Print("\r\n")
+			return string(input), true
+		}
+
+		// Ctrl+C (ASCII 3)
+		if b == 3 {
+			fmt.Print("\r\n")
+			return "", false
+		}
+
+		// Slash menu trigger on empty line
+		if b == '/' && len(input) == 0 {
+			term.Restore(fd, oldState)
+			fmt.Print("\r\n")
+
+			selected := ShowActionMenu()
+			if selected != "" {
+				return selected, true
+			}
+
+			oldState, _ = term.MakeRaw(fd)
+			fmt.Print(prompt)
+			continue
+		}
+
+		// Backspace (127 / 8)
+		if b == 127 || b == 8 {
+			if len(input) > 0 {
+				input = input[:len(input)-1]
+				fmt.Print("\b \b")
+			}
+			continue
+		}
+
+		// Printable characters
+		if b >= 32 && b <= 126 {
+			r := rune(b)
+			input = append(input, r)
+			fmt.Print(string(r))
+		}
+	}
+}
+
+func StartREPL(sm *session.Manager, registry *tools.Registry, cfg *llm.Config) {
+	PrintBanner(cfg.ActiveModel)
+
+	for {
+		input, ok := readPrompt("mobius > ")
+		if !ok {
 			break
 		}
 
-		input := strings.TrimSpace(scanner.Text())
-
+		input = strings.TrimSpace(input)
 		if input == "" {
 			continue
 		}
 
-		if input == "exit" || input == "quit" {
-			fmt.Println("Exiting Mobius.")
-			break
-		}
-
-		if strings.ToLower(input) == "/listchats" {
-			list := sm.ListSession()
-			fmt.Println("List of sessions : ")
-			for _, item := range list {
-				activeMarker := " "
-				if item.IsActive {
-					activeMarker = "*"
+			switch {
+			case input == "/exit":
+				fmt.Println("Goodbye!")
+				return
+			case input == "/listchats":
+				selectedID := ShowSessionMenu(sm)
+				if selectedID != "" {
+					s, err := sm.SwitchSession(selectedID)
+					if err != nil {
+						fmt.Printf("Error: %v\n", err)
+					} else {
+						fmt.Printf("Switched to session: '%s'\n", s.Name)
+					}
 				}
-				fmt.Printf("  [%s] %s \n", activeMarker, item.Name)
-				
+			case input == "/newchat":
+				handleNewChat(sm, registry, cfg)
+			default:
+				// Normal AI Prompt
+				activeSession, err := sm.GetActive()
+				if err != nil {
+					fmt.Printf("Error: %v\n", err)
+					continue
+				}
+				_ = RunGoal(activeSession, input)
 			}
-			continue
-		}
-
-		if strings.ToLower(input) == "/newchat" {
-			if unstarted := sm.GetUnstarted(); unstarted != nil {
-				_, _ = sm.SwitchSession(unstarted.ID)
-				fmt.Printf("Reusing empty session '%s' (ID: %s).\n", unstarted.Name, unstarted.ID)
-				continue
-			}
-
-			provider, err := cfg.GetProviderForModel("")
-			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-				continue
-			}
-
-			newAgent, err := agent.NewAgent(provider, registry, cfg.ActiveModel)
-			if err != nil {
-				fmt.Printf("Error creating agent: %v\n", err)
-				continue
-			}
-
-			newSess := sm.CreateSession("chat", newAgent)
-			fmt.Printf("Started new session '%s' (ID: %s)\n", newSess.Name, newSess.ID)
-			continue
-		}
-
-		activeSession, err := sm.GetActive()
-		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			continue
-		}
-
-		_ = RunGoal(activeSession, input)
 	}
+}
+
+// Helper to keep StartREPL tidy
+func handleNewChat(sm *session.Manager, registry *tools.Registry, cfg *llm.Config) {
+	if unstarted := sm.GetUnstarted(); unstarted != nil {
+		_, _ = sm.SwitchSession(unstarted.ID)
+		fmt.Printf("Reusing empty session '%s' (ID: %s).\n", unstarted.Name, unstarted.ID)
+		return
+	}
+
+	provider, err := cfg.GetProviderForModel("")
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+
+	newAgent, err := agent.NewAgent(provider, registry, cfg.ActiveModel)
+	if err != nil {
+		fmt.Printf("Error creating agent: %v\n", err)
+		return
+	}
+
+	newSess := sm.CreateSession("New Chat", newAgent)
+	fmt.Printf("Started new session '%s' (ID: %s)\n", newSess.Name, newSess.ID)
 }

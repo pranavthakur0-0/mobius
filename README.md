@@ -1,8 +1,12 @@
 # Mobius
 
-A high-performance, modular **AI Agent Harness** written in idiomatic Go.
+<p align="center">
+  <img src="public/mascot.png" alt="Mobius Mascot" width="300" />
+</p>
 
-Mobius implements a multi-turn **ReAct** (Reason → Act → Observe) loop that connects to LLM providers, executes tools autonomously, and maintains persistent conversation sessions.
+<p align="center">
+  <strong>A high-performance, modular AI Agent Harness in idiomatic Go</strong>
+</p>
 
 ---
 
