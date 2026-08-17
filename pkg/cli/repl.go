@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"mobius/pkg/agent"
 	"mobius/pkg/llm"
+	"mobius/pkg/session"
 	"mobius/pkg/tools"
 	"os"
 	"strings"
 )
 
-func StartREPL(a *agent.Agent, registry *tools.Registry, cfg *llm.Config) {
+func StartREPL(sm *session.Manager, registry *tools.Registry, cfg *llm.Config) {
 	scanner := bufio.NewScanner(os.Stdin)
 	if scanner.Err() != nil {
-		return 
+		return
 	}
 
 	for {
@@ -25,7 +26,7 @@ func StartREPL(a *agent.Agent, registry *tools.Registry, cfg *llm.Config) {
 
 		input := strings.TrimSpace(scanner.Text())
 
-		if input == ""{
+		if input == "" {
 			continue
 		}
 
@@ -34,6 +35,50 @@ func StartREPL(a *agent.Agent, registry *tools.Registry, cfg *llm.Config) {
 			break
 		}
 
-		_ = RunGoal(a, input)
+		if strings.ToLower(input) == "/listchats" {
+			list := sm.ListSession()
+			fmt.Println("List of sessions : ")
+			for _, item := range list {
+				activeMarker := " "
+				if item.IsActive {
+					activeMarker = "*"
+				}
+				fmt.Printf("  [%s] %s \n", activeMarker, item.Name)
+				
+			}
+			continue
+		}
+
+		if strings.ToLower(input) == "/newchat" {
+			if unstarted := sm.GetUnstarted(); unstarted != nil {
+				_, _ = sm.SwitchSession(unstarted.ID)
+				fmt.Printf("Reusing empty session '%s' (ID: %s).\n", unstarted.Name, unstarted.ID)
+				continue
+			}
+
+			provider, err := cfg.GetProviderForModel("")
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				continue
+			}
+
+			newAgent, err := agent.NewAgent(provider, registry, cfg.ActiveModel)
+			if err != nil {
+				fmt.Printf("Error creating agent: %v\n", err)
+				continue
+			}
+
+			newSess := sm.CreateSession("chat", newAgent)
+			fmt.Printf("Started new session '%s' (ID: %s)\n", newSess.Name, newSess.ID)
+			continue
+		}
+
+		activeSession, err := sm.GetActive()
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			continue
+		}
+
+		_ = RunGoal(activeSession, input)
 	}
 }

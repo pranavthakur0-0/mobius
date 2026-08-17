@@ -1,5 +1,9 @@
 package contextPkg
 
+import (
+	"fmt"
+)
+
 
 
 
@@ -17,4 +21,10 @@ func BuildSystemPrompt(customInstructions string) string {
 		return customInstructions
 	}
 	return defaultSystemInstructions
+}
+
+
+
+func TitlePrompt(prompt string) string {
+	return fmt.Sprintf("Generate a concise 3 to 4 word title for this prompt. Return ONLY the title with no quotes or punctuation:\n%s", prompt)
 }
