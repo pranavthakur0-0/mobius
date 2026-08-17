@@ -1,28 +1,36 @@
-package agent
+package session
 
 import (
-	"context"
+	"mobius/pkg/agent"
+	contextPkg "mobius/pkg/context"
 	"time"
 )
 
-// Session represents a single conversational agent session with its own independent memory.
+// Session represents an independent agent with its own persistent memory history.
 type Session struct {
 	ID        string
-	Title     string
-	Context   *context.Context
+	Name      string
+	Agent     *agent.Agent
+	Context   *contextPkg.ConversationContext
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	Started	  bool
 }
 
 
-// NewSession creates a new session with its own conversation context.
-func NewSession(id, title string, ctx *context.Context) *Session {
+// NewSession initializes an agent session with its own memory context.
+func NewSession(id, name string, a *agent.Agent) *Session {
+	systemPrompt := contextPkg.BuildSystemPrompt("")
+	convContext := contextPkg.NewConverationContext(systemPrompt)
 	now := time.Now()
 	return &Session{
 		ID:        id,
-		Title:     title,
-		Context:   ctx,
+		Name:      "New Chat",
+		Agent:     a,
+		Context:   convContext,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
 }
+
+

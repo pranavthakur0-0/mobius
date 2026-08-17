@@ -10,12 +10,9 @@ import (
 
 
 
-func (a *Agent) Run(ctx context.Context, userInstruction string) (string, error) {
+func (a *Agent) Run(ctx context.Context, c *contextPkg.ConversationContext, userInstruction string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, a.timeout)
 	defer cancel()
-
-	systemPrompt := contextPkg.BuildSystemPrompt("")
-	c := contextPkg.NewConverationContext(systemPrompt)
 
 	c.AddUserMessage(userInstruction)
 

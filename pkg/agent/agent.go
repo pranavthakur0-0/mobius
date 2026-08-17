@@ -1,10 +1,13 @@
 package agent
 
 import (
+	"context"
 	"fmt"
+	contextPkg "mobius/pkg/context"
 	"mobius/pkg/llm"
 	"mobius/pkg/tools"
 	"mobius/pkg/tracer"
+	"strings"
 	"time"
 )
 
@@ -88,3 +91,33 @@ func NewAgent(provider llm.Provider, registry *tools.Registry, model string) (*A
 
 
 
+func (a *Agent) ThreadID() string {
+	return a.threadID
+}
+
+
+
+// GenerateTitle asks the LLM for a concise 3-4 word title for the session
+func (a *Agent) GenerateTitle(ctx context.Context, prompt string) string {
+	req := &llm.ChatRequest{
+		Model: a.model,
+		Message: []llm.Message{
+			{
+				Role:    llm.RoleUser,
+				Content: contextPkg.TitlePrompt(prompt),
+			},
+		},
+	}
+
+	resp, err := a.provider.Generate(ctx, req)
+	if err != nil || strings.TrimSpace(resp.Content) == "" {
+		// Fallback: take first 4 words of the prompt
+		words := strings.Fields(prompt)
+		if len(words) > 4 {
+			words = words[:4]
+		}
+		return strings.Join(words, " ")
+	}
+
+	return strings.TrimSpace(resp.Content)
+}
