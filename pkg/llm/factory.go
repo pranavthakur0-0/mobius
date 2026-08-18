@@ -24,6 +24,12 @@ type Config struct {
 	Providers   map[string]ProviderConfig `toml:"providers"`
 }
 
+
+type ModelInfo struct {
+	ProviderName	string
+	Model			string
+}
+
 // LoadConfig reads and unmarshals a TOML configuration file from the specified path.
 func LoadConfig(path string) (*Config, error) {
 	path = strings.TrimSpace(path)
@@ -52,14 +58,19 @@ func LoadConfig(path string) (*Config, error) {
 }
 
 // ListAllModels extracts and returns a flat list of all model names across all configured providers.
-func (c *Config) ListAllModels() ([]string, error) {
+func (c *Config) ListAllModels() (map[string]*ModelInfo, error) {
 	if c == nil {
 		return nil, fmt.Errorf("config is nil")
 	}
-
-	var allModels []string
+	allModels := make(map[string]*ModelInfo)
 	for _, provider := range c.Providers {
-		allModels = append(allModels, provider.Models...)
+		models := provider.Models
+		for _, model := range models {
+			allModels[model] = &ModelInfo {
+				ProviderName: provider.Name,
+				Model: model,
+			}
+		}
 	}
 
 	if len(allModels) == 0 {

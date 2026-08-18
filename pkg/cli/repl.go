@@ -45,6 +45,17 @@ func readPrompt(prompt string) (string, bool) {
 			return "", false
 		}
 
+		// Escape key (ASCII 27)
+		if b == 27 {
+			// If it's a standalone Esc, clear current input
+			for len(input) > 0 {
+				input = input[:len(input)-1]
+				fmt.Print("\b \b")
+			}
+			continue
+		}
+
+
 		// Slash menu trigger on empty line
 		if b == '/' && len(input) == 0 {
 			term.Restore(fd, oldState)
@@ -78,7 +89,7 @@ func readPrompt(prompt string) (string, bool) {
 	}
 }
 
-func StartREPL(sm *session.Manager, registry *tools.Registry, cfg *llm.Config) {
+func StartREPL(sm *session.Manager, registry *tools.Registry, cfg *llm.Config, agent *agent.Agent) {
 	PrintBanner(cfg.ActiveModel)
 
 	for {
@@ -108,6 +119,28 @@ func StartREPL(sm *session.Manager, registry *tools.Registry, cfg *llm.Config) {
 				}
 			case input == "/newchat":
 				handleNewChat(sm, registry, cfg)
+			case input == "/models":
+				activeSession, err := sm.GetActive()
+				if err != nil {
+					fmt.Printf("Error: %v\n", err)
+					continue
+				}
+				currentModel := activeSession.Agent.GetModel()
+				model, err := ShowModelMenu(cfg, currentModel)
+				if err != nil {
+					fmt.Printf("Error: %v\n", err)
+					continue
+				}
+				if model == "" || model == currentModel {
+					continue // User cancelled with Esc or re-selected current model
+				}
+				provider, err := cfg.GetProviderForModel(model)
+				if err != nil {
+					fmt.Printf("Error getting provider for %s: %v\n", model, err)
+					continue
+				}
+				activeSession.Agent.SetModel(model, provider)
+				fmt.Printf("Switched model to '%s'\n", model)
 			default:
 				// Normal AI Prompt
 				activeSession, err := sm.GetActive()
