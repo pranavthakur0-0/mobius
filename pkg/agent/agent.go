@@ -121,3 +121,16 @@ func (a *Agent) GenerateTitle(ctx context.Context, prompt string) string {
 
 	return strings.TrimSpace(resp.Content)
 }
+
+
+
+func (a *Agent) GetModel() string {
+	return a.model
+}
+
+
+
+func (a *Agent) SetModel(model string, provider llm.Provider) {
+	a.model = model
+	a.provider = provider
+}
