@@ -69,6 +69,7 @@ type ChatRequest struct {
 type ChatResponse struct {
 	Content   string     `json:"content"`
 	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
+	Usage     Usage      `json:"usage"` // <-- Add the Usage struct here
 }
 
 
@@ -80,3 +81,7 @@ type Provider interface {
 	// Generate sends a chat completion request to the LLM and returns the generated response.
 	Generate(ctx context.Context, req *ChatRequest) (*ChatResponse, error)
 }
+
+
+
+

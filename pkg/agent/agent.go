@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"mobius/pkg/budget"
 	contextPkg "mobius/pkg/context"
 	"mobius/pkg/llm"
 	"mobius/pkg/tools"
@@ -22,6 +23,7 @@ type Agent struct {
     maxCost  float64
     timeout  time.Duration
     toolDefs []llm.ToolDefinition
+	tracker  *budget.Tracker
 }
 
 
@@ -30,8 +32,7 @@ type Agent struct {
 
 
 
-
-func NewAgent(provider llm.Provider, registry *tools.Registry, model string) (*Agent, error) {
+func NewAgent(provider llm.Provider, registry *tools.Registry, model string, pricePrompt float64, priceComp float64) (*Agent, error) {
 
 
 	// 1. Validate required core components
@@ -76,6 +77,9 @@ func NewAgent(provider llm.Provider, registry *tools.Registry, model string) (*A
 				},
 			})
 		}
+		 // Pass the real prices instead of 0.15 and 0.60
+        budgetTracker := budget.NewTracker(agentCfg.MaxCost, pricePrompt, priceComp)
+
 		agent := &Agent{
 			threadID: tracer.NewThreadID(),
 			provider: provider,
@@ -85,6 +89,7 @@ func NewAgent(provider llm.Provider, registry *tools.Registry, model string) (*A
 			maxCost:  agentCfg.MaxCost,
 			timeout:  time.Duration(agentCfg.TimeoutSeconds) * time.Second,
 			toolDefs: toolDefs, // Store once
+			tracker:  budgetTracker,
 		}
 	return agent, nil
 }
@@ -130,7 +135,10 @@ func (a *Agent) GetModel() string {
 
 
 
-func (a *Agent) SetModel(model string, provider llm.Provider) {
+func (a *Agent) SetModel(model string, provider llm.Provider, pricePrompt, priceComp float64) {
 	a.model = model
 	a.provider = provider
+	a.tracker.UpdatePrices(pricePrompt, priceComp) // Update the tracker's rates
 }
+
+

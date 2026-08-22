@@ -22,12 +22,25 @@ type ProviderConfig struct {
 type Config struct {
 	ActiveModel string                    `toml:"default_model"`
 	Providers   map[string]ProviderConfig `toml:"providers"`
+	Pricing 	struct {
+		Prompt     map[string]float64 `toml:"prompt"`
+		Completion map[string]float64 `toml:"completion"`
+	} `toml:"pricing"`
 }
 
 
 type ModelInfo struct {
 	ProviderName	string
 	Model			string
+}
+
+
+
+func (c *Config) GetPrices(modelName string) (float64, float64) {
+	promptCost := c.Pricing.Prompt[modelName]
+	compCost := c.Pricing.Completion[modelName]
+	
+	return promptCost, compCost
 }
 
 // LoadConfig reads and unmarshals a TOML configuration file from the specified path.

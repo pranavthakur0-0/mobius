@@ -139,7 +139,8 @@ func StartREPL(sm *session.Manager, registry *tools.Registry, cfg *llm.Config, a
 					fmt.Printf("Error getting provider for %s: %v\n", model, err)
 					continue
 				}
-				activeSession.Agent.SetModel(model, provider)
+				pCost, cCost := cfg.GetPrices(model)
+				activeSession.Agent.SetModel(model, provider, pCost, cCost)
 				fmt.Printf("Switched model to '%s'\n", model)
 			default:
 				// Normal AI Prompt
@@ -166,8 +167,8 @@ func handleNewChat(sm *session.Manager, registry *tools.Registry, cfg *llm.Confi
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
-
-	newAgent, err := agent.NewAgent(provider, registry, cfg.ActiveModel)
+	pCost, cCost := cfg.GetPrices(cfg.ActiveModel)
+	newAgent, err := agent.NewAgent(provider, registry, cfg.ActiveModel, pCost, cCost)
 	if err != nil {
 		fmt.Printf("Error creating agent: %v\n", err)
 		return

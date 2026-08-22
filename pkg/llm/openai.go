@@ -50,11 +50,18 @@ type openAIChoice struct {
 
 type openAIResponse struct {
 	Choices []openAIChoice `json:"choices"`
+	Usage   openAIUsage    `json:"usage"` // <-- We capture the raw JSON here
 }
 
 
 
 
+
+type openAIUsage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
+}
 
 
 
@@ -139,6 +146,11 @@ func (p *OpenAIProvider) Generate(ctx context.Context, req *ChatRequest) (*ChatR
 	return &ChatResponse{
 		Content:   msg.Content,
 		ToolCalls: toolCalls,
+		Usage: Usage{ 
+			PromptTokens:     result.Usage.PromptTokens,
+			CompletionTokens: result.Usage.CompletionTokens,
+			TotalTokens:      result.Usage.TotalTokens,
+		},
 	}, nil
 }
 
