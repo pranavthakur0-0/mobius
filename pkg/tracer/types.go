@@ -1,6 +1,7 @@
 package tracer
 
 import (
+	"mobius/pkg/llm"
 	"sync"
 )
 
@@ -16,6 +17,7 @@ type LogEntry struct {
 	Thought  string `json:"thought,omitempty"`
 	ToolName string `json:"tool_name,omitempty"`
 	Output   string `json:"output,omitempty"`
+	Usage    llm.Usage `json:"usage,omitempty"` 
 }
 
 
