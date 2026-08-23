@@ -21,7 +21,7 @@ type Session struct {
 // NewSession initializes an agent session with its own memory context.
 func NewSession(id, name string, a *agent.Agent) *Session {
 	systemPrompt := contextPkg.BuildSystemPrompt("")
-	convContext := contextPkg.NewConverationContext(systemPrompt)
+	convContext := contextPkg.NewConversationContext(systemPrompt)
 	now := time.Now()
 	return &Session{
 		ID:        id,
