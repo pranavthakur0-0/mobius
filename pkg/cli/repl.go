@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"mobius/pkg/agent"
+	"mobius/pkg/events"
 	"mobius/pkg/llm"
 	"mobius/pkg/session"
 	"mobius/pkg/tools"
@@ -89,7 +90,7 @@ func readPrompt(prompt string) (string, bool) {
 	}
 }
 
-func StartREPL(sm *session.Manager, registry *tools.Registry, cfg *llm.Config, agent *agent.Agent) {
+func StartREPL(sm *session.Manager, registry *tools.Registry, cfg *llm.Config, agent *agent.Agent, eventStore events.EventStore) {
 	PrintBanner(cfg.ActiveModel)
 
 	for {
@@ -118,7 +119,7 @@ func StartREPL(sm *session.Manager, registry *tools.Registry, cfg *llm.Config, a
 					}
 				}
 			case input == "/newchat":
-				handleNewChat(sm, registry, cfg)
+				 handleNewChat(sm, registry, cfg, eventStore)
 			case input == "/models":
 				activeSession, err := sm.GetActive()
 				if err != nil {
@@ -155,7 +156,7 @@ func StartREPL(sm *session.Manager, registry *tools.Registry, cfg *llm.Config, a
 }
 
 // Helper to keep StartREPL tidy
-func handleNewChat(sm *session.Manager, registry *tools.Registry, cfg *llm.Config) {
+func handleNewChat(sm *session.Manager, registry *tools.Registry, cfg *llm.Config, eventStore events.EventStore) {
 	if unstarted := sm.GetUnstarted(); unstarted != nil {
 		_, _ = sm.SwitchSession(unstarted.ID)
 		fmt.Printf("Reusing empty session '%s' (ID: %s).\n", unstarted.Name, unstarted.ID)
@@ -168,7 +169,7 @@ func handleNewChat(sm *session.Manager, registry *tools.Registry, cfg *llm.Confi
 		return
 	}
 	pCost, cCost := cfg.GetPrices(cfg.ActiveModel)
-	newAgent, err := agent.NewAgent(provider, registry, cfg.ActiveModel, pCost, cCost)
+	newAgent, err := agent.NewAgent(provider, registry, cfg.ActiveModel, pCost, cCost, eventStore)
 	if err != nil {
 		fmt.Printf("Error creating agent: %v\n", err)
 		return

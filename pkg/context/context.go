@@ -11,7 +11,7 @@ type ConversationContext struct {
 }
 
 
-func NewConverationContext(systemPrompt string) *ConversationContext {
+func NewConversationContext(systemPrompt string) *ConversationContext {
 	ctx := &ConversationContext{
 		messages: make([]llm.Message, 0),
 	}

@@ -5,34 +5,36 @@ import (
 	"fmt"
 	"mobius/pkg/budget"
 	contextPkg "mobius/pkg/context"
+	"mobius/pkg/events"
 	"mobius/pkg/llm"
 	"mobius/pkg/tools"
-	"mobius/pkg/tracer"
+	"mobius/pkg/utils"
 	"strings"
 	"time"
+	"mobius/pkg/artifact"
 )
 
 
 
 type Agent struct {
-    threadID string // Session / Thread ID
-    provider llm.Provider
-    registry *tools.Registry
-    model    string
-    maxSteps int
-    maxCost  float64
-    timeout  time.Duration
-    toolDefs []llm.ToolDefinition
-	tracker  *budget.Tracker
+	threadID string
+	provider llm.Provider
+	registry *tools.Registry
+	model    string
+	maxSteps int
+	maxCost  float64
+	timeout  time.Duration
+	toolDefs []llm.ToolDefinition
+	tracker  budget.CostTracker
+	events   events.EventStore //  EventStore
+	artifactStore *artifact.Store 
 }
 
 
 
 
 
-
-
-func NewAgent(provider llm.Provider, registry *tools.Registry, model string, pricePrompt float64, priceComp float64) (*Agent, error) {
+func NewAgent(provider llm.Provider, registry *tools.Registry, model string, pricePrompt float64, priceComp float64,  eventStore events.EventStore) (*Agent, error) {
 
 
 	// 1. Validate required core components
@@ -63,7 +65,10 @@ func NewAgent(provider llm.Provider, registry *tools.Registry, model string, pri
 		return nil, fmt.Errorf("timeout_seconds must be greater than 0, got %d", agentCfg.TimeoutSeconds)
 	}
 
-
+	artStore, err := artifact.NewStore(".mobius/artifacts")
+		if err != nil {
+			return nil, fmt.Errorf("failed to init artifact store: %w", err)
+		}
 	
 	// 3. Build tool definitions once
 		var toolDefs []llm.ToolDefinition
@@ -81,7 +86,7 @@ func NewAgent(provider llm.Provider, registry *tools.Registry, model string, pri
         budgetTracker := budget.NewTracker(agentCfg.MaxCost, pricePrompt, priceComp)
 
 		agent := &Agent{
-			threadID: tracer.NewThreadID(),
+			threadID: utils.NewThreadID(),
 			provider: provider,
 			registry: registry,
 			model:    model,
@@ -90,10 +95,16 @@ func NewAgent(provider llm.Provider, registry *tools.Registry, model string, pri
 			timeout:  time.Duration(agentCfg.TimeoutSeconds) * time.Second,
 			toolDefs: toolDefs, // Store once
 			tracker:  budgetTracker,
+			events:   eventStore,
+			artifactStore: artStore,
 		}
 	return agent, nil
 }
 
+
+func (a *Agent) Events() events.EventStore {
+	return a.events
+}
 
 
 func (a *Agent) ThreadID() string {
@@ -134,11 +145,8 @@ func (a *Agent) GetModel() string {
 }
 
 
-
 func (a *Agent) SetModel(model string, provider llm.Provider, pricePrompt, priceComp float64) {
-	a.model = model
-	a.provider = provider
-	a.tracker.UpdatePrices(pricePrompt, priceComp) // Update the tracker's rates
+    a.model = model
+    a.provider = provider
+    a.tracker.UpdatePrices(pricePrompt, priceComp)
 }
-
-

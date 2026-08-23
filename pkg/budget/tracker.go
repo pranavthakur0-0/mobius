@@ -7,6 +7,16 @@ import (
 
 const USDToINRRate = 95
 
+
+type CostTracker interface {
+	Add(u llm.Usage)
+	Check() error
+	Status() string
+	CurrentCostUSD() float64
+	UpdatePrices(pricePrompt, priceComp float64) 
+}
+
+
 // Tracker keeps a running total of tokens and calculates USD costs.
 type Tracker struct {
 	TotalPromptTokens     int

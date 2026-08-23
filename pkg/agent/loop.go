@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	contextPkg "mobius/pkg/context"
+	"mobius/pkg/events"
 	"mobius/pkg/llm"
-	"mobius/pkg/tracer"
+	"mobius/pkg/artifact" 
 )
 
 
@@ -15,6 +16,13 @@ func (a *Agent) Run(ctx context.Context, c *contextPkg.ConversationContext, user
 	defer cancel()
 
 	c.AddUserMessage(userInstruction)
+	if a.events != nil {
+		_ = a.events.Append(ctx, events.Event{
+			ThreadID: a.threadID,
+			Type:     events.EventUserMessage,
+			Content:  userInstruction,
+		})
+	}
 
 	fmt.Printf("[Goal] %s\n\n", userInstruction)
 
@@ -39,49 +47,89 @@ func (a *Agent) Run(ctx context.Context, c *contextPkg.ConversationContext, user
 			return "", fmt.Errorf("step %d LLM call failed: %w", step, err)
 		}
 
+		if a.tracker != nil {
+			a.tracker.Add(resp.Usage)
+			// 2. Check if we exceeded max allowed cost
+			if err := a.tracker.Check(); err != nil {
+				return "", fmt.Errorf("step %d aborted by budget: %w", step, err)
+			}
+			// 3. Print live status
+			fmt.Printf("%s\n\n", a.tracker.Status())
+		}
+
 		c.AddAssistantMessage(resp.Content, resp.ToolCalls)
 		if resp.Content != "" {
 			fmt.Printf("[Thought]\n%s\n\n", resp.Content)
 		}
 
 		if len(resp.ToolCalls) == 0 {
-			_ = tracer.AppendLog(tracer.LogEntry{
-				ThreadID: a.threadID,
-				Step: step,
-				Thought: resp.Content,
-			})
+			if a.events != nil {
+				_ = a.events.Append(ctx, events.Event{
+					ThreadID: a.threadID,
+					Step:     step,
+					Type:     events.EventAssistantMessage,
+					Content:  resp.Content,
+					Usage:    &resp.Usage,
+				})
+			}
 			return resp.Content, nil
 		}
+
 
 		for _, tc := range resp.ToolCalls {
 			fmt.Printf("[Tool] %s(%s)\n", tc.Function.Name, tc.Function.Arguments)
 			tool, err := a.registry.Get(tc.Function.Name)
 			var output string
+			var toolErr string
 			if err != nil {
 				output = fmt.Sprintf("Error: tool '%s' not found", tc.Function.Name)
+				toolErr = output
 			} else {
 				out, execErr := tool.Execute(ctx, tc.Function.Arguments)
 				if execErr != nil {
 					output = fmt.Sprintf("Tool error: %s\nOutput: %s", execErr, out)
+					toolErr = execErr.Error()
 				} else {
 					output = out
 				}
+			} // 👈 Added closing brace for tool execution
+			// Artifact interception: offload large outputs
+			if a.artifactStore != nil {
+				result := artifact.Intercept(a.artifactStore, a.threadID, tc.Function.Name, output)
+				c.AddToolResult(tc.ID, result.Observation) // LLM sees preview
+				// EventStore gets full details
+				if a.events != nil {
+					ref := result.ArtifactRef
+					_ = a.events.Append(ctx, events.Event{
+						ThreadID:   a.threadID,
+						Step:       step,
+						Type:       events.EventToolResult,
+						ToolCallID: tc.ID,
+						ToolName:   tc.Function.Name,
+						ToolArgs:   tc.Function.Arguments,
+						ToolOutput: result.Observation,
+						ContentRef: ref,
+						ToolError:  toolErr,
+					})
+				}
+			} else {
+				// Add tool observation to history
+				c.AddToolResult(tc.ID, output)
+				// Record tool result event to EventStore
+				if a.events != nil {
+					_ = a.events.Append(ctx, events.Event{
+						ThreadID:   a.threadID,
+						Step:       step,
+						Type:       events.EventToolResult,
+						ToolCallID: tc.ID,
+						ToolName:   tc.Function.Name,
+						ToolArgs:   tc.Function.Arguments,
+						ToolOutput: output,
+						ToolError:  toolErr,
+					})
+				}
 			}
-			// Add tool observation to history
-			c.AddToolResult(tc.ID, output)
-
-			// Adding this tracer to get the log of what are we sending to llm 
-			_ = tracer.AppendLog(tracer.LogEntry{
-				ThreadID: a.threadID,
-				Step: step,
-				Thought: resp.Content,
-				ToolName: tc.Function.Name,
-				Output: output,
-			})
-		}
-		
-	}
-	
+		} 
+	} 
 	return "", fmt.Errorf("agent reached maximum step budget (%d steps)", a.maxSteps)
-
 }

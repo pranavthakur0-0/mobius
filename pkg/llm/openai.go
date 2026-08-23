@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 )
 
 func init() {
@@ -76,9 +75,7 @@ func NewOpenAIProvider(apiKey, baseURL string) *OpenAIProvider {
 	return &OpenAIProvider{
 		APIKey:  apiKey,
 		BaseURL: baseURL,
-		Client: &http.Client{
-			Timeout: 60 * time.Second,
-		},
+		Client:  &http.Client{}, 
 	}
 }
 
