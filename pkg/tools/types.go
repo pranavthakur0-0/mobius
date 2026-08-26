@@ -12,9 +12,9 @@ type Property struct {
 
 // ToolSchema describes the JSON structure of arguments the tool accepts.
 type ToolSchema struct {
-	Type       string              `json:"type"`                 // Almost always "object" for tool parameter specs
-	Properties map[string]Property `json:"properties"`           // Map of parameter name to property definition
-	Required   []string            `json:"required,omitempty"`   // List of required parameter names
+	Type       string              `json:"type"`               // Almost always "object" for tool parameter specs
+	Properties map[string]Property `json:"properties"`         // Map of parameter name to property definition
+	Required   []string            `json:"required,omitempty"` // List of required parameter names
 }
 
 // Tool is the standard interface every agent tool must implement.

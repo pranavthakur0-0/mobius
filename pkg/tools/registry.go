@@ -22,7 +22,6 @@ func (r *Registry) Register(tool Tool) {
 	r.tools[tool.Name()] = tool
 }
 
-
 // Get retrieves a tool by its unique name.
 func (r *Registry) Get(name string) (Tool, error) {
 	if name == "" {
@@ -47,9 +46,6 @@ func (r *Registry) List() []Tool {
 	})
 	return result
 }
-
-
-
 
 // NewDefaultRegistry creates a registry pre-loaded with all standard tools.
 func NewDefaultRegistry(workDir string) *Registry {

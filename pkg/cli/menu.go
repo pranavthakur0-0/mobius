@@ -32,8 +32,6 @@ func ShowActionMenu() string {
 	return selected
 }
 
-
-
 // ShowSessionMenu opens an interactive select menu listing all sessions
 func ShowSessionMenu(sm *session.Manager) string {
 	list := sm.ListSession()
@@ -42,7 +40,7 @@ func ShowSessionMenu(sm *session.Manager) string {
 	}
 	var options []huh.Option[string]
 	for _, item := range list {
-		label := item.Name
+		var label string
 		if item.IsActive {
 			label = fmt.Sprintf("* %s (active)", item.Name)
 		} else {
@@ -67,7 +65,6 @@ func ShowSessionMenu(sm *session.Manager) string {
 	}
 	return selectedID
 }
-
 
 func newMenuKeyMap() *huh.KeyMap {
 	km := huh.NewDefaultKeyMap()

@@ -22,24 +22,21 @@ type ProviderConfig struct {
 type Config struct {
 	ActiveModel string                    `toml:"default_model"`
 	Providers   map[string]ProviderConfig `toml:"providers"`
-	Pricing 	struct {
+	Pricing     struct {
 		Prompt     map[string]float64 `toml:"prompt"`
 		Completion map[string]float64 `toml:"completion"`
 	} `toml:"pricing"`
 }
 
-
 type ModelInfo struct {
-	ProviderName	string
-	Model			string
+	ProviderName string
+	Model        string
 }
-
-
 
 func (c *Config) GetPrices(modelName string) (float64, float64) {
 	promptCost := c.Pricing.Prompt[modelName]
 	compCost := c.Pricing.Completion[modelName]
-	
+
 	return promptCost, compCost
 }
 
@@ -79,9 +76,9 @@ func (c *Config) ListAllModels() (map[string]*ModelInfo, error) {
 	for _, provider := range c.Providers {
 		models := provider.Models
 		for _, model := range models {
-			allModels[model] = &ModelInfo {
+			allModels[model] = &ModelInfo{
 				ProviderName: provider.Name,
-				Model: model,
+				Model:        model,
 			}
 		}
 	}

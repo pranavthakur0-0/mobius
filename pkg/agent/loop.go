@@ -9,8 +9,6 @@ import (
 	"mobius/pkg/llm"
 )
 
-
-
 func (a *Agent) Run(ctx context.Context, c *agentctx.ConversationContext, userInstruction string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, a.timeout)
 	defer cancel()
@@ -26,7 +24,6 @@ func (a *Agent) Run(ctx context.Context, c *agentctx.ConversationContext, userIn
 
 	fmt.Printf("[Goal] %s\n\n", userInstruction)
 
-
 	for step := 1; step <= a.maxSteps; step++ {
 		if err := ctx.Err(); err != nil {
 			return "", fmt.Errorf("agent interrupted: %w", err)
@@ -40,12 +37,10 @@ func (a *Agent) Run(ctx context.Context, c *agentctx.ConversationContext, userIn
 
 		fmt.Printf("[Step %d/%d] Thinking...\n", step, a.maxSteps)
 
-
-
 		req := &llm.ChatRequest{
-			Model: a.model,
+			Model:   a.model,
 			Message: c.Messages(),
-			Tools: a.toolDefs,
+			Tools:   a.toolDefs,
 		}
 
 		resp, err := a.provider.Generate(ctx, req)
@@ -80,7 +75,6 @@ func (a *Agent) Run(ctx context.Context, c *agentctx.ConversationContext, userIn
 			}
 			return resp.Content, nil
 		}
-
 
 		for _, tc := range resp.ToolCalls {
 			fmt.Printf("[Tool] %s(%s)\n", tc.Function.Name, tc.Function.Arguments)
@@ -135,7 +129,7 @@ func (a *Agent) Run(ctx context.Context, c *agentctx.ConversationContext, userIn
 					})
 				}
 			}
-		} 
-	} 
+		}
+	}
 	return "", fmt.Errorf("agent reached maximum step budget (%d steps)", a.maxSteps)
 }

@@ -1,23 +1,19 @@
 package agentctx
 
-
-
 import (
 	"fmt"
 	"mobius/pkg/llm"
 	"strings"
 )
 
-
-
 const (
 	SummaryOpenTag  = "<compacted-summary>"
 	SummaryCloseTag = "</compacted-summary>"
 )
 
-
 // Checkpoint preamble instruction shown to the model after compaction
 const CheckpointPreamble = `This is an automatically generated checkpoint condensing an earlier span of the conversation to free up context. Treat the captured context as established background and build on it without restating it. Continue the task directly from the messages that follow, without acknowledging this checkpoint.`
+
 // The strict 8-section compaction instruction
 const CompactionInstruction = `You are now acting as a compaction engine for this AI coding assistant. Condense the conversation ABOVE into a structured checkpoint that lets another model resume the work with no loss of essential context.
 Output EXACTLY the Markdown structure below: keep every section, in order. Use terse bullets, not prose paragraphs. Write "(none)" for an empty section — never drop a section.
@@ -44,9 +40,6 @@ Rules:
 - Output only the checkpoint text: do not call any tool or take any other action.
 - If the conversation already contains a <compacted-summary> block, it is a PRIOR checkpoint. Do not copy it forward verbatim: preserve still-true facts, drop stale ones, and merge newer information into a single consolidated summary under the same structure.`
 
-
-
-
 func FrameSummary(rawSummary string) string {
 	cleaned := strings.TrimSpace(rawSummary)
 	return fmt.Sprintf("%s\n\n%s\n%s\n%s", CheckpointPreamble, SummaryOpenTag, cleaned, SummaryCloseTag)
@@ -57,8 +50,8 @@ func BuildCompactionMessages(olderMessages []llm.Message) []llm.Message {
 	copy(reqMessages, olderMessages)
 
 	reqMessages = append(reqMessages, llm.Message{
-			Role:    llm.RoleUser,
-			Content: CompactionInstruction,
+		Role:    llm.RoleUser,
+		Content: CompactionInstruction,
 	})
 	return reqMessages
 }

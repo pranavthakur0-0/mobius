@@ -13,11 +13,9 @@ type AgentConfig struct {
 	TimeoutSeconds int     `toml:"timeout_seconds"`
 }
 
-
-
 func LoadAgentConfig(path string) (*AgentConfig, error) {
 	if path == "" {
-		path = "pkg/agent/agent.toml"
+		path = "config/agent.toml"
 	}
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -31,4 +29,3 @@ func LoadAgentConfig(path string) (*AgentConfig, error) {
 	}
 	return &fileData.Agent, nil
 }
-

@@ -34,14 +34,6 @@ func (v *ViewFileTool) Name() string {
 	return "view_file"
 }
 
-
-
-
-
-
-
-
-
 // Description returns a helpful summary of the tool for the LLM.
 func (v *ViewFileTool) Description() string {
 	return "Reads the contents of a file with line numbers and optional line range slicing."

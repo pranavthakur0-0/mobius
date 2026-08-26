@@ -14,9 +14,8 @@ type Session struct {
 	Context   *agentctx.ConversationContext
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	Started	  bool
+	Started   bool
 }
-
 
 // NewSession initializes an agent session with its own memory context.
 func NewSession(id, name string, a *agent.Agent) *Session {
@@ -32,5 +31,3 @@ func NewSession(id, name string, a *agent.Agent) *Session {
 		UpdatedAt: now,
 	}
 }
-
-

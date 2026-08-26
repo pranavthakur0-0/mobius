@@ -1,6 +1,5 @@
-
-
 package llm
+
 // Usage records the token consumption for a single LLM generation.
 type Usage struct {
 	PromptTokens     int `json:"prompt_tokens"`

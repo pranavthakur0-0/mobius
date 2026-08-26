@@ -21,7 +21,7 @@ func readPrompt(prompt string) (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	defer term.Restore(fd, oldState)
+	defer func() { _ = term.Restore(fd, oldState) }()
 
 	var input []rune
 	buf := make([]byte, 1)
@@ -56,10 +56,9 @@ func readPrompt(prompt string) (string, bool) {
 			continue
 		}
 
-
 		// Slash menu trigger on empty line
 		if b == '/' && len(input) == 0 {
-			term.Restore(fd, oldState)
+			_ = term.Restore(fd, oldState)
 			fmt.Print("\r\n")
 
 			selected := ShowActionMenu()
@@ -104,54 +103,54 @@ func StartREPL(sm *session.Manager, registry *tools.Registry, cfg *llm.Config, a
 			continue
 		}
 
-			switch {
-			case input == "/exit":
-				fmt.Println("Goodbye!")
-				return
-			case input == "/listchats":
-				selectedID := ShowSessionMenu(sm)
-				if selectedID != "" {
-					s, err := sm.SwitchSession(selectedID)
-					if err != nil {
-						fmt.Printf("Error: %v\n", err)
-					} else {
-						fmt.Printf("Switched to session: '%s'\n", s.Name)
-					}
-				}
-			case input == "/newchat":
-				 handleNewChat(sm, registry, cfg, eventStore)
-			case input == "/models":
-				activeSession, err := sm.GetActive()
+		switch input {
+		case "/exit":
+			fmt.Println("Goodbye!")
+			return
+		case "/listchats":
+			selectedID := ShowSessionMenu(sm)
+			if selectedID != "" {
+				s, err := sm.SwitchSession(selectedID)
 				if err != nil {
 					fmt.Printf("Error: %v\n", err)
-					continue
+				} else {
+					fmt.Printf("Switched to session: '%s'\n", s.Name)
 				}
-				currentModel := activeSession.Agent.GetModel()
-				model, err := ShowModelMenu(cfg, currentModel)
-				if err != nil {
-					fmt.Printf("Error: %v\n", err)
-					continue
-				}
-				if model == "" || model == currentModel {
-					continue // User cancelled with Esc or re-selected current model
-				}
-				provider, err := cfg.GetProviderForModel(model)
-				if err != nil {
-					fmt.Printf("Error getting provider for %s: %v\n", model, err)
-					continue
-				}
-				pCost, cCost := cfg.GetPrices(model)
-				activeSession.Agent.SetModel(model, provider, pCost, cCost)
-				fmt.Printf("Switched model to '%s'\n", model)
-			default:
-				// Normal AI Prompt
-				activeSession, err := sm.GetActive()
-				if err != nil {
-					fmt.Printf("Error: %v\n", err)
-					continue
-				}
-				_ = RunGoal(activeSession, input)
 			}
+		case "/newchat":
+			handleNewChat(sm, registry, cfg, eventStore)
+		case "/models":
+			activeSession, err := sm.GetActive()
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				continue
+			}
+			currentModel := activeSession.Agent.GetModel()
+			model, err := ShowModelMenu(cfg, currentModel)
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				continue
+			}
+			if model == "" || model == currentModel {
+				continue // User cancelled with Esc or re-selected current model
+			}
+			provider, err := cfg.GetProviderForModel(model)
+			if err != nil {
+				fmt.Printf("Error getting provider for %s: %v\n", model, err)
+				continue
+			}
+			pCost, cCost := cfg.GetPrices(model)
+			activeSession.Agent.SetModel(model, provider, pCost, cCost)
+			fmt.Printf("Switched model to '%s'\n", model)
+		default:
+			// Normal AI Prompt
+			activeSession, err := sm.GetActive()
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				continue
+			}
+			_ = RunGoal(activeSession, input)
+		}
 	}
 }
 

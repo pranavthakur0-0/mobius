@@ -30,10 +30,9 @@ type FunctionCall struct {
 // ToolCall represents a request from the LLM to execute a specific tool with arguments.
 type ToolCall struct {
 	ID       string       `json:"id"`
-	Type     string       `json:"type"`     // "function"
+	Type     string       `json:"type"` // "function"
 	Function FunctionCall `json:"function"`
 }
-
 
 // Message represents a single turn in a multi-turn conversation.
 type Message struct {
@@ -42,8 +41,6 @@ type Message struct {
 	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
 	ToolCallID string     `json:"tool_call_id,omitempty"`
 }
-
-
 
 // FunctionDef holds the name, description, and schema for a tool.
 type FunctionDef struct {
@@ -57,11 +54,10 @@ type ToolDefinition struct {
 	Function FunctionDef `json:"function"`
 }
 
-
 // ChatRequest encapsulates the payload sent to an LLM provider.
 type ChatRequest struct {
-	Model   string    `json:"model"`
-	Message []Message `json:"messages"`
+	Model   string           `json:"model"`
+	Message []Message        `json:"messages"`
 	Tools   []ToolDefinition `json:"tools,omitempty"`
 }
 
@@ -72,7 +68,6 @@ type ChatResponse struct {
 	Usage     Usage      `json:"usage"` // <-- Add the Usage struct here
 }
 
-
 // Provider is the common interface implemented by all LLM client adapters (OpenAI, DeepSeek, Claude, Gemini, etc.).
 type Provider interface {
 	// Name returns the provider identifier (e.g. "openai", "anthropic", "gemini").
@@ -81,7 +76,3 @@ type Provider interface {
 	// Generate sends a chat completion request to the LLM and returns the generated response.
 	Generate(ctx context.Context, req *ChatRequest) (*ChatResponse, error)
 }
-
-
-
-

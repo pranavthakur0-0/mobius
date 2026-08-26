@@ -4,6 +4,7 @@
 .env
 *.env
 .env.local
+!.env.example
 
 # ==============================================================================
 # Go Binaries & Build Output
@@ -35,6 +36,13 @@ coverage.out
 *.md
 !README.md
 !readme.md
+!CONTRIBUTING.md
+!CODE_OF_CONDUCT.md
+!SECURITY.md
+!AGENTS.md
+!docs/*.md
+!docs/**/*.md
+!.github/**/*.md
 
 # ==============================================================================
 # Editor & OS Metadata / Local Agent Configs

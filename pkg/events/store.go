@@ -12,16 +12,13 @@ import (
 	"time"
 )
 
-
 type FileEventStore struct {
-	dir string
+	dir      string
 	eventsCh chan Event
-	doneCh chan struct{}
-	mu sync.RWMutex
-	closed bool
+	doneCh   chan struct{}
+	mu       sync.RWMutex
+	closed   bool
 }
-
-
 
 func NewFileEventStore(dir string, bufferSize int) (*FileEventStore, error) {
 	if dir == "" {
@@ -36,9 +33,9 @@ func NewFileEventStore(dir string, bufferSize int) (*FileEventStore, error) {
 	}
 
 	store := &FileEventStore{
-		dir:		dir,
-		eventsCh:   make(chan Event, bufferSize),
-		doneCh:  	make(chan struct{}),
+		dir:      dir,
+		eventsCh: make(chan Event, bufferSize),
+		doneCh:   make(chan struct{}),
 	}
 
 	go store.worker()
@@ -62,15 +59,12 @@ func (s *FileEventStore) writeSync(event Event) error {
 	return nil
 }
 
-
 func (s *FileEventStore) worker() {
 	defer close(s.doneCh)
 	for event := range s.eventsCh {
 		_ = s.writeSync(event)
 	}
 }
-
-
 
 func (s *FileEventStore) Append(ctx context.Context, event Event) error {
 	s.mu.RLock()
@@ -80,8 +74,8 @@ func (s *FileEventStore) Append(ctx context.Context, event Event) error {
 	}
 	s.mu.RUnlock()
 	if event.ID == "" {
-    event.ID = utils.NewEventID()
-}
+		event.ID = utils.NewEventID()
+	}
 	if event.Timestamp.IsZero() {
 		event.Timestamp = time.Now().UTC()
 	}
@@ -96,9 +90,6 @@ func (s *FileEventStore) Append(ctx context.Context, event Event) error {
 	}
 
 }
-
-
-
 
 func (s *FileEventStore) GetEvents(ctx context.Context, threadID string) ([]Event, error) {
 	s.mu.RLock()
@@ -120,8 +111,8 @@ func (s *FileEventStore) GetEvents(ctx context.Context, threadID string) ([]Even
 	buf := make([]byte, 1024*1024)
 	scanner.Buffer(buf, 10*1024*1024)
 
-	for scanner.Scan(){
-		if err:= ctx.Err(); err != nil {
+	for scanner.Scan() {
+		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 		line := scanner.Bytes()
@@ -141,10 +132,6 @@ func (s *FileEventStore) GetEvents(ctx context.Context, threadID string) ([]Even
 	}
 	return events, nil
 }
-
-
-
-
 
 // Close gracefully flushes all queued events and shuts down the background worker.
 func (s *FileEventStore) Close() error {

@@ -94,8 +94,11 @@ mobius/
 ├── cmd/
 │   └── mobius/
 │       └── main.go              # CLI & REPL entrypoint
+├── config/                      # Configuration files
+│   ├── model_config.toml        # Provider & model definitions with pricing
+│   └── agent.toml               # Agent step limits & runtime budgets
 ├── pkg/
-│   ├── agent/                   # ReAct runtime loop, agent state & TOML configuration
+│   ├── agent/                   # ReAct runtime loop & execution engine
 │   ├── agentctx/                # Token sensor, 8-section summarizer & compactor
 │   ├── artifact/                # Large output interceptor & disk-backed store
 │   ├── budget/                  # Token accounting, dynamic pricing & budget limits
@@ -106,7 +109,6 @@ mobius/
 │   ├── tools/                   # Tool registry & native implementations
 │   └── utils/                   # ID generators & shared helpers
 ├── .mobius/                     # Local artifacts, events & runtime data (gitignored)
-├── model_config.toml            # Provider & model definitions
 └── go.mod
 ```
 
@@ -168,8 +170,8 @@ Pass a task directly as a command-line argument:
 ---
 
 ## ⚙️ Configuration
-
-Configure providers and defaults in `model_config.toml`:
+ 
+Configure providers and defaults in `config/model_config.toml`:
 
 ```toml
 default_model = "deepseek-chat"
@@ -189,7 +191,7 @@ env_key  = "OPENAI_API_KEY"
 models   = ["gpt-4o", "gpt-4o-mini", "o3-mini"]
 ```
 
-Configure agent runtime budgets in `pkg/agent/agent.toml`:
+Configure agent runtime budgets in `config/agent.toml`:
 
 ```toml
 max_steps = 25

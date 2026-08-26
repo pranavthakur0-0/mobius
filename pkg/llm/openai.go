@@ -23,7 +23,6 @@ type OpenAIProvider struct {
 	Client  *http.Client
 }
 
-
 // Internal response unmarshaling structs
 type openAIFunctionCall struct {
 	Name      string `json:"name"`
@@ -35,7 +34,6 @@ type openAIToolCall struct {
 	Type     string             `json:"type"`
 	Function openAIFunctionCall `json:"function"`
 }
-
 
 // Internal response unmarshaling structs
 type openAIMessage struct {
@@ -52,19 +50,11 @@ type openAIResponse struct {
 	Usage   openAIUsage    `json:"usage"` // <-- We capture the raw JSON here
 }
 
-
-
-
-
 type openAIUsage struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
 	TotalTokens      int `json:"total_tokens"`
 }
-
-
-
-
 
 // NewOpenAIProvider creates and configures a new OpenAI-compatible provider.
 func NewOpenAIProvider(apiKey, baseURL string) *OpenAIProvider {
@@ -75,7 +65,7 @@ func NewOpenAIProvider(apiKey, baseURL string) *OpenAIProvider {
 	return &OpenAIProvider{
 		APIKey:  apiKey,
 		BaseURL: baseURL,
-		Client:  &http.Client{}, 
+		Client:  &http.Client{},
 	}
 }
 
@@ -129,12 +119,12 @@ func (p *OpenAIProvider) Generate(ctx context.Context, req *ChatRequest) (*ChatR
 	msg := result.Choices[0].Message
 
 	var toolCalls []ToolCall
-	for _ , tc := range msg.ToolCalls {
+	for _, tc := range msg.ToolCalls {
 		toolCalls = append(toolCalls, ToolCall{
-			ID:        tc.ID,
-			Type:      "function",
+			ID:   tc.ID,
+			Type: "function",
 			Function: FunctionCall{
-				Name:     tc.Function.Name,
+				Name:      tc.Function.Name,
 				Arguments: tc.Function.Arguments,
 			},
 		})
@@ -143,11 +133,10 @@ func (p *OpenAIProvider) Generate(ctx context.Context, req *ChatRequest) (*ChatR
 	return &ChatResponse{
 		Content:   msg.Content,
 		ToolCalls: toolCalls,
-		Usage: Usage{ 
+		Usage: Usage{
 			PromptTokens:     result.Usage.PromptTokens,
 			CompletionTokens: result.Usage.CompletionTokens,
 			TotalTokens:      result.Usage.TotalTokens,
 		},
 	}, nil
 }
-

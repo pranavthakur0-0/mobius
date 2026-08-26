@@ -2,14 +2,11 @@ package agentctx
 
 import (
 	"mobius/pkg/llm"
-
 )
-
 
 type ConversationContext struct {
 	messages []llm.Message
 }
-
 
 func NewConversationContext(systemPrompt string) *ConversationContext {
 	ctx := &ConversationContext{
@@ -18,7 +15,7 @@ func NewConversationContext(systemPrompt string) *ConversationContext {
 
 	if systemPrompt != "" {
 		ctx.messages = append(ctx.messages, llm.Message{
-			Role: llm.RoleSystem,
+			Role:    llm.RoleSystem,
 			Content: systemPrompt,
 		})
 	}
@@ -27,11 +24,10 @@ func NewConversationContext(systemPrompt string) *ConversationContext {
 
 func (c *ConversationContext) AddUserMessage(content string) {
 	c.messages = append(c.messages, llm.Message{
-		Role: llm.RoleUser,
+		Role:    llm.RoleUser,
 		Content: content,
 	})
 }
-
 
 func (c *ConversationContext) AddAssistantMessage(content string, toolCalls []llm.ToolCall) {
 	c.messages = append(c.messages, llm.Message{
@@ -50,7 +46,6 @@ func (c *ConversationContext) AddToolResult(toolCallID, output string) {
 	})
 }
 
-
 func (c *ConversationContext) Messages() []llm.Message {
 	return c.messages
 }
@@ -59,5 +54,3 @@ func (c *ConversationContext) Messages() []llm.Message {
 func (c *ConversationContext) SetMessages(messages []llm.Message) {
 	c.messages = messages
 }
-
-

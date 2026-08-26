@@ -4,9 +4,6 @@ import (
 	"fmt"
 )
 
-
-
-
 const defaultSystemInstructions = `You are Mobius, an expert autonomous AI software engineering agent.
 You solve coding and engineering tasks by planning step-by-step and executing tools.
 Guidelines:
@@ -15,15 +12,12 @@ Guidelines:
 3. After making changes, run tests or verify using run_command when appropriate.
 4. When the task is fully accomplished, provide a concise final answer summarizing your solution.`
 
-
 func BuildSystemPrompt(customInstructions string) string {
 	if customInstructions != "" {
 		return customInstructions
 	}
 	return defaultSystemInstructions
 }
-
-
 
 func TitlePrompt(prompt string) string {
 	return fmt.Sprintf("Generate a concise 3 to 4 word title for this prompt. Return ONLY the title with no quotes or punctuation:\n%s", prompt)

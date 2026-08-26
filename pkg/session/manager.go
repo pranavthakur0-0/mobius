@@ -5,11 +5,9 @@ import (
 	"mobius/pkg/agent"
 )
 
-
-
 type Manager struct {
-	sessions	map[string]*Session
-	activeId	string
+	sessions map[string]*Session
+	activeId string
 }
 
 type SessionInfo struct {
@@ -17,7 +15,6 @@ type SessionInfo struct {
 	Name     string
 	IsActive bool
 }
-
 
 func NewManager(defaultSession *Session) *Manager {
 	m := &Manager{
@@ -29,7 +26,6 @@ func NewManager(defaultSession *Session) *Manager {
 	return m
 }
 
-
 func (m *Manager) GetActive() (*Session, error) {
 	session, exists := m.sessions[m.activeId]
 	if !exists {
@@ -37,7 +33,6 @@ func (m *Manager) GetActive() (*Session, error) {
 	}
 	return session, nil // the actual pointer so memory updates persist!
 }
-
 
 func (m *Manager) AddSession(session *Session) {
 	m.sessions[session.ID] = session
@@ -52,8 +47,6 @@ func (m *Manager) SwitchSession(sessionId string) (*Session, error) {
 	return session, nil
 }
 
-
-
 func (m *Manager) ListSession() []SessionInfo {
 	var list []SessionInfo
 	for _, s := range m.sessions {
@@ -66,7 +59,6 @@ func (m *Manager) ListSession() []SessionInfo {
 	return list
 }
 
-
 // CreateSession creates and switches to a new session
 func (m *Manager) CreateSession(name string, a *agent.Agent) *Session {
 	sess := NewSession(a.ThreadID(), name, a)
@@ -74,7 +66,6 @@ func (m *Manager) CreateSession(name string, a *agent.Agent) *Session {
 	m.activeId = sess.ID
 	return sess
 }
-
 
 func (m *Manager) GetUnstarted() *Session {
 	for _, s := range m.sessions {
@@ -84,5 +75,3 @@ func (m *Manager) GetUnstarted() *Session {
 	}
 	return nil
 }
-
-

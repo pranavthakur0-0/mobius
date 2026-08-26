@@ -4,16 +4,16 @@ import "fmt"
 
 // Thresholds for tool output handling
 const (
-	SmallThreshold   = 2000  // Under 2k chars: keep full output in context
-	PreviewThreshold = 8000  // 2k-8k chars: include a preview
-	PreviewLines     = 20    // Number of lines to show in preview
+	SmallThreshold   = 2000 // Under 2k chars: keep full output in context
+	PreviewThreshold = 8000 // 2k-8k chars: include a preview
+	PreviewLines     = 20   // Number of lines to show in preview
 )
 
 // Result holds the processed tool output after interception.
 type Result struct {
-	Observation string // What goes into the LLM context (full, preview, or ref)
-	FullOutput  string // The complete original output
-	ArtifactRef string // artifact:// reference if offloaded, empty otherwise
+	Observation  string // What goes into the LLM context (full, preview, or ref)
+	FullOutput   string // The complete original output
+	ArtifactRef  string // artifact:// reference if offloaded, empty otherwise
 	WasOffloaded bool
 }
 
