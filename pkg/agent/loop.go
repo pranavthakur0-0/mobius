@@ -3,15 +3,15 @@ package agent
 import (
 	"context"
 	"fmt"
-	contextPkg "mobius/pkg/context"
+	"mobius/pkg/agentctx"
+	"mobius/pkg/artifact"
 	"mobius/pkg/events"
 	"mobius/pkg/llm"
-	"mobius/pkg/artifact" 
 )
 
 
 
-func (a *Agent) Run(ctx context.Context, c *contextPkg.ConversationContext, userInstruction string) (string, error) {
+func (a *Agent) Run(ctx context.Context, c *agentctx.ConversationContext, userInstruction string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, a.timeout)
 	defer cancel()
 
@@ -32,9 +32,15 @@ func (a *Agent) Run(ctx context.Context, c *contextPkg.ConversationContext, user
 			return "", fmt.Errorf("agent interrupted: %w", err)
 		}
 
+		currentTokenCount := agentctx.EstimateConversationTokens(c.Messages())
+		if a.compactor != nil && a.compactor.ShouldCompact(currentTokenCount) {
+			fmt.Printf("[Step %d/%d] Summarizing...\n", step, a.maxSteps)
+			_ = a.compactor.Compact(ctx, c)
+		}
+
 		fmt.Printf("[Step %d/%d] Thinking...\n", step, a.maxSteps)
 
-	
+
 
 		req := &llm.ChatRequest{
 			Model: a.model,

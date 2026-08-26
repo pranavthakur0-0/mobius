@@ -1,4 +1,4 @@
-package contextPkg
+package agentctx
 
 import (
 	"mobius/pkg/llm"
@@ -53,6 +53,11 @@ func (c *ConversationContext) AddToolResult(toolCallID, output string) {
 
 func (c *ConversationContext) Messages() []llm.Message {
 	return c.messages
+}
+
+// SetMessages replaces the active message slice (used during context compaction).
+func (c *ConversationContext) SetMessages(messages []llm.Message) {
+	c.messages = messages
 }
 
 

@@ -2,7 +2,7 @@ package session
 
 import (
 	"mobius/pkg/agent"
-	contextPkg "mobius/pkg/context"
+	"mobius/pkg/agentctx"
 	"time"
 )
 
@@ -11,7 +11,7 @@ type Session struct {
 	ID        string
 	Name      string
 	Agent     *agent.Agent
-	Context   *contextPkg.ConversationContext
+	Context   *agentctx.ConversationContext
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	Started	  bool
@@ -20,8 +20,8 @@ type Session struct {
 
 // NewSession initializes an agent session with its own memory context.
 func NewSession(id, name string, a *agent.Agent) *Session {
-	systemPrompt := contextPkg.BuildSystemPrompt("")
-	convContext := contextPkg.NewConversationContext(systemPrompt)
+	systemPrompt := agentctx.BuildSystemPrompt("")
+	convContext := agentctx.NewConversationContext(systemPrompt)
 	now := time.Now()
 	return &Session{
 		ID:        id,

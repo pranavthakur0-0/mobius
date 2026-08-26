@@ -3,31 +3,32 @@ package agent
 import (
 	"context"
 	"fmt"
+	"mobius/pkg/agentctx"
+	"mobius/pkg/artifact"
 	"mobius/pkg/budget"
-	contextPkg "mobius/pkg/context"
 	"mobius/pkg/events"
 	"mobius/pkg/llm"
 	"mobius/pkg/tools"
 	"mobius/pkg/utils"
 	"strings"
 	"time"
-	"mobius/pkg/artifact"
 )
 
 
 
 type Agent struct {
-	threadID string
-	provider llm.Provider
-	registry *tools.Registry
-	model    string
-	maxSteps int
-	maxCost  float64
-	timeout  time.Duration
-	toolDefs []llm.ToolDefinition
-	tracker  budget.CostTracker
-	events   events.EventStore //  EventStore
-	artifactStore *artifact.Store 
+	threadID      string
+	provider      llm.Provider
+	registry      *tools.Registry
+	model         string
+	maxSteps      int
+	maxCost       float64
+	timeout       time.Duration
+	toolDefs      []llm.ToolDefinition
+	tracker       budget.CostTracker
+	events        events.EventStore // EventStore
+	artifactStore *artifact.Store
+	compactor     *agentctx.Compactor
 }
 
 
@@ -86,17 +87,18 @@ func NewAgent(provider llm.Provider, registry *tools.Registry, model string, pri
         budgetTracker := budget.NewTracker(agentCfg.MaxCost, pricePrompt, priceComp)
 
 		agent := &Agent{
-			threadID: utils.NewThreadID(),
-			provider: provider,
-			registry: registry,
-			model:    model,
-			maxSteps: agentCfg.MaxSteps,
-			maxCost:  agentCfg.MaxCost,
-			timeout:  time.Duration(agentCfg.TimeoutSeconds) * time.Second,
-			toolDefs: toolDefs, // Store once
-			tracker:  budgetTracker,
-			events:   eventStore,
+			threadID:      utils.NewThreadID(),
+			provider:      provider,
+			registry:      registry,
+			model:         model,
+			maxSteps:      agentCfg.MaxSteps,
+			maxCost:       agentCfg.MaxCost,
+			timeout:       time.Duration(agentCfg.TimeoutSeconds) * time.Second,
+			toolDefs:      toolDefs, // Store once
+			tracker:       budgetTracker,
+			events:        eventStore,
 			artifactStore: artStore,
+			compactor:     agentctx.NewCompactor(agentctx.DefaultCompactorConfig(), provider, model),
 		}
 	return agent, nil
 }
@@ -120,7 +122,7 @@ func (a *Agent) GenerateTitle(ctx context.Context, prompt string) string {
 		Message: []llm.Message{
 			{
 				Role:    llm.RoleUser,
-				Content: contextPkg.TitlePrompt(prompt),
+				Content: agentctx.TitlePrompt(prompt),
 			},
 		},
 	}
@@ -149,4 +151,7 @@ func (a *Agent) SetModel(model string, provider llm.Provider, pricePrompt, price
     a.model = model
     a.provider = provider
     a.tracker.UpdatePrices(pricePrompt, priceComp)
+    if a.compactor != nil {
+        a.compactor.UpdateModel(model, provider)
+    }
 }
