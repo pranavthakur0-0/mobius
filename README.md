@@ -13,6 +13,7 @@
   <a href="#features"><img src="https://img.shields.io/badge/Language-Go%201.24+-00ADD8?style=flat-square&logo=go" alt="Go Version"></a>
   <a href="#license"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"></a>
   <a href="#context-compaction"><img src="https://img.shields.io/badge/Context-Auto--Compacting-orange?style=flat-square" alt="Context Engine"></a>
+  <a href="#testing"><img src="https://img.shields.io/badge/Linter-golangci--lint-brightgreen?style=flat-square" alt="Linter"></a>
 </p>
 
 ---
@@ -61,7 +62,7 @@
 
 ### 1. Autonomous ReAct Runtime Loop
 * **Step-Budgeted Reasoning**: Enforces configurable `max_steps` ceilings and execution timeouts per turn.
-* **Universal Tool Execution**: Built-in, high-performance tools (`run_command`, `view_file`, `edit_file`, `write_file`, `list_dir`, `grep_search`).
+* **Universal Tool Suite**: Built-in tools: `run_command`, `view_file`, `edit_file`, `write_file`, `list_dir`, `grep_search`.
 
 ### 2. Automatic Context Compaction (`pkg/agentctx`)
 * **Sub-Microsecond Token Meter**: Zero-allocation heuristic estimator ($\sim 4$ chars/token + framing overhead) monitors live context window consumption.
@@ -89,14 +90,22 @@
 
 ## 📦 Project Structure
 
-```
+```text
 mobius/
+├── .github/                     # GitHub Actions CI workflow & issue templates
+├── bin/                         # Compiled binaries
 ├── cmd/
 │   └── mobius/
 │       └── main.go              # CLI & REPL entrypoint
 ├── config/                      # Configuration files
 │   ├── model_config.toml        # Provider & model definitions with pricing
 │   └── agent.toml               # Agent step limits & runtime budgets
+├── docs/                        # Architecture & roadmap documentation
+│   ├── ARCHITECTURE.md
+│   └── ROADMAP.md
+├── examples/                    # Programmatic Go SDK usage & custom tools
+│   ├── basic_agent/
+│   └── custom_tool/
 ├── pkg/
 │   ├── agent/                   # ReAct runtime loop & execution engine
 │   ├── agentctx/                # Token sensor, 8-section summarizer & compactor
@@ -108,8 +117,13 @@ mobius/
 │   ├── session/                 # Multi-session memory manager
 │   ├── tools/                   # Tool registry & native implementations
 │   └── utils/                   # ID generators & shared helpers
-├── .mobius/                     # Local artifacts, events & runtime data (gitignored)
-└── go.mod
+├── scripts/                     # Local setup & verification scripts
+│   └── setup.sh
+├── .editorconfig                # Universal indentation & formatting rules
+├── .env.example                 # API keys template
+├── .golangci.yml                # Production linter configuration
+├── Makefile                     # Build & test automation
+└── README.md
 ```
 
 ---
@@ -120,7 +134,7 @@ mobius/
 * **Go 1.24+**
 * API key for your preferred LLM provider (e.g. DeepSeek, OpenAI, Anthropic, or Gemini)
 
-### Installation
+### Quick Setup
 
 ```bash
 # Clone the repository
@@ -128,32 +142,61 @@ git clone https://github.com/pranavthakur0-0/mobius.git
 cd mobius
 
 # Set up your environment variables
-cat <<EOF > .env
-DEEPSEEK_API_KEY=your-key-here
-OPENAI_API_KEY=your-key-here
-ANTHROPIC_API_KEY=your-key-here
-GEMINI_API_KEY=your-key-here
-EOF
+cp .env.example .env
+# Edit .env with your API keys
 
 # Build the binary
-go build -o bin/mobius cmd/mobius/main.go
+make build
 ```
 
 ---
 
 ## 💻 Usage
 
-### Interactive REPL Mode
+### 1. Interactive REPL Mode
 Launch the interactive terminal:
 ```bash
 ./bin/mobius
+# Or: make run
 ```
 
-### One-Shot Execution Mode
+### 2. One-Shot Execution Mode
 Pass a task directly as a command-line argument:
 ```bash
 ./bin/mobius "Analyze the repository and fix any race conditions in pkg/agent"
 ```
+
+### 3. Programmatic Go SDK Usage
+You can embed `mobius` into your own Go applications:
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    "mobius/pkg/agent"
+    "mobius/pkg/agentctx"
+    "mobius/pkg/events"
+    "mobius/pkg/llm"
+    "mobius/pkg/tools"
+)
+
+func main() {
+    provider := llm.NewOpenAIProvider(os.Getenv("DEEPSEEK_API_KEY"), "https://api.deepseek.com/v1")
+    registry := tools.NewDefaultRegistry(".")
+    eventStore, _ := events.NewFileEventStore(".mobius/events", 256)
+    defer eventStore.Close()
+
+    ag, _ := agent.NewAgent(provider, registry, "deepseek-chat", 0.14, 0.28, eventStore)
+    conv := agentctx.NewConversationContext(agentctx.BuildSystemPrompt(""))
+
+    response, _ := ag.Run(context.Background(), conv, "Explain the project structure.")
+    fmt.Println(response)
+}
+```
+*(See [`examples/basic_agent/main.go`](examples/basic_agent/main.go) and [`examples/custom_tool/main.go`](examples/custom_tool/main.go) for more)*
 
 ---
 
@@ -170,8 +213,8 @@ Pass a task directly as a command-line argument:
 ---
 
 ## ⚙️ Configuration
- 
-Configure providers and defaults in `config/model_config.toml`:
+
+Configure providers and models in `config/model_config.toml`:
 
 ```toml
 default_model = "deepseek-chat"
@@ -201,16 +244,29 @@ timeout_seconds = 300
 
 ---
 
-## 🧪 Testing
+## 🧪 Development & Testing
 
-Run the full unit test suite:
+Mobius includes full build automation via `Makefile`:
 
 ```bash
-go test -v ./...
+# Run unit test suite
+make test
+
+# Run tests with race detection
+make test-race
+
+# Run linter (golangci-lint)
+make lint
+
+# Format code (gofmt)
+make fmt
+
+# Format, vet, lint, test, and build in one command
+make all
 ```
 
 ---
 
 ## 📄 License
 
-Distributed under the **MIT License**. See `LICENSE` for more information.
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
