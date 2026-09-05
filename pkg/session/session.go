@@ -32,7 +32,6 @@ func NewSession(id, name string, a *agent.Agent, systemPrompt ...string) *Sessio
 		prompt = agentctx.BuildSystemPrompt("", guidesPrompt)
 	}
 
-
 	convContext := agentctx.NewConversationContext(prompt)
 	now := time.Now()
 	return &Session{

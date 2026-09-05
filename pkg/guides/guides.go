@@ -66,7 +66,7 @@ func LoadFromWorkSpace(configPath string, workspaceRoot string) (*GuideSet, erro
 	for _, c := range cfg.Candidates {
 		targetPath := filepath.Join(workspaceRoot, c.Path)
 
-	 	data, err := os.ReadFile(targetPath)
+		data, err := os.ReadFile(targetPath)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				continue
@@ -75,9 +75,9 @@ func LoadFromWorkSpace(configPath string, workspaceRoot string) (*GuideSet, erro
 		}
 
 		var guide = Guide{
-			Source: c.Path,
-			Path: targetPath,
-			Content: string(data),
+			Source:   c.Path,
+			Path:     targetPath,
+			Content:  string(data),
 			Priority: c.Priority,
 		}
 		gs.Add(guide)
@@ -86,8 +86,6 @@ func LoadFromWorkSpace(configPath string, workspaceRoot string) (*GuideSet, erro
 
 	return gs, nil
 }
-
-
 
 func (gs *GuideSet) RenderSystemPrompt() string {
 	if gs.IsEmpty() {
