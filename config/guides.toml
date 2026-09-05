@@ -1,0 +1,20 @@
+# config/guides.toml
+
+# The harness checks files in the workspace and orders them by priority (highest first)
+
+[[candidates]]
+path = "AGENTS.md"
+priority = 100
+
+[[candidates]]
+path = "CLAUDE.md"
+priority = 80
+
+[[candidates]]
+path = ".cursorrules"
+priority = 60
+
+# Users can add their own custom guide files anytime:
+[[candidates]]
+path = "INTERNAL_RULES.md"
+priority = 95

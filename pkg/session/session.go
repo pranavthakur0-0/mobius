@@ -3,6 +3,7 @@ package session
 import (
 	"mobius/pkg/agent"
 	"mobius/pkg/agentctx"
+	"mobius/pkg/guides"
 	"time"
 )
 
@@ -18,13 +19,25 @@ type Session struct {
 }
 
 // NewSession initializes an agent session with its own memory context.
-func NewSession(id, name string, a *agent.Agent) *Session {
-	systemPrompt := agentctx.BuildSystemPrompt("")
-	convContext := agentctx.NewConversationContext(systemPrompt)
+func NewSession(id, name string, a *agent.Agent, systemPrompt ...string) *Session {
+	prompt := ""
+	if len(systemPrompt) > 0 {
+		prompt = systemPrompt[0]
+	}
+	if prompt == "" {
+		guidesPrompt := ""
+		if gs, err := guides.LoadFromWorkSpace("config/guides.toml", "."); err == nil {
+			guidesPrompt = gs.RenderSystemPrompt()
+		}
+		prompt = agentctx.BuildSystemPrompt("", guidesPrompt)
+	}
+
+
+	convContext := agentctx.NewConversationContext(prompt)
 	now := time.Now()
 	return &Session{
 		ID:        id,
-		Name:      "New Chat",
+		Name:      name,
 		Agent:     a,
 		Context:   convContext,
 		CreatedAt: now,

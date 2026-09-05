@@ -12,11 +12,19 @@ Guidelines:
 3. After making changes, run tests or verify using run_command when appropriate.
 4. When the task is fully accomplished, provide a concise final answer summarizing your solution.`
 
-func BuildSystemPrompt(customInstructions string) string {
-	if customInstructions != "" {
-		return customInstructions
+func BuildSystemPrompt(customInstructions string, guidesPrompt ...string) string {
+	prompt := defaultSystemInstructions
+
+	// If guides were passed in, append them
+	if len(guidesPrompt) > 0 && guidesPrompt[0] != "" {
+		prompt += guidesPrompt[0]
 	}
-	return defaultSystemInstructions
+
+	if customInstructions != "" {
+		prompt += "\n\n# ADDITIONAL INSTRUCTIONS\n" + customInstructions
+	}
+
+	return prompt
 }
 
 func TitlePrompt(prompt string) string {
