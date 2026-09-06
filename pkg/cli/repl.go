@@ -1,12 +1,14 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"mobius/pkg/agent"
 	"mobius/pkg/events"
+	"mobius/pkg/guides"
 	"mobius/pkg/llm"
 	"mobius/pkg/session"
 	"mobius/pkg/tools"
@@ -142,6 +144,24 @@ func StartREPL(sm *session.Manager, registry *tools.Registry, cfg *llm.Config, a
 			pCost, cCost := cfg.GetPrices(model)
 			activeSession.Agent.SetModel(model, provider, pCost, cCost)
 			fmt.Printf("Switched model to '%s'\n", model)
+		case "/init":
+			activeSession, err := sm.GetActive()
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				continue
+			}
+			provider, err := cfg.GetProviderForModel(activeSession.Agent.GetModel())
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				continue
+			}
+			fmt.Printf("Scanning workspace and generating verification commands with %s...\n", activeSession.Agent.GetModel())
+			gen, err := guides.InitWorkspace(context.Background(), provider, activeSession.Agent.GetModel(), ".")
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				continue
+			}
+			fmt.Printf("\nAGENTS.md updated successfully:\n\n%s\n", gen)
 		default:
 			// Normal AI Prompt
 			activeSession, err := sm.GetActive()

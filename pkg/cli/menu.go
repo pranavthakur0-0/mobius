@@ -20,6 +20,7 @@ func ShowActionMenu() string {
 					huh.NewOption("Start New Chat", "/newchat"),
 					huh.NewOption("Models", "/models"),
 					huh.NewOption("Switch / List Chats", "/listchats"),
+					huh.NewOption("Init Workspace (Detect Build/Test)", "/init"),
 					huh.NewOption("Exit Mobius", "/exit"),
 				).
 				Value(&selected),
