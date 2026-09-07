@@ -8,6 +8,7 @@ import (
 	"mobius/pkg/budget"
 	"mobius/pkg/events"
 	"mobius/pkg/llm"
+	"mobius/pkg/sensors"
 	"mobius/pkg/tools"
 	"mobius/pkg/utils"
 	"strings"
@@ -15,18 +16,19 @@ import (
 )
 
 type Agent struct {
-	threadID      string
-	provider      llm.Provider
-	registry      *tools.Registry
-	model         string
-	maxSteps      int
-	maxCost       float64
-	timeout       time.Duration
-	toolDefs      []llm.ToolDefinition
-	tracker       budget.CostTracker
-	events        events.EventStore // EventStore
-	artifactStore *artifact.Store
-	compactor     *agentctx.Compactor
+	threadID       string
+	provider       llm.Provider
+	registry       *tools.Registry
+	sensorRegistry *sensors.Registry
+	model          string
+	maxSteps       int
+	maxCost        float64
+	timeout        time.Duration
+	toolDefs       []llm.ToolDefinition
+	tracker        budget.CostTracker
+	events         events.EventStore // EventStore
+	artifactStore  *artifact.Store
+	compactor      *agentctx.Compactor
 }
 
 func NewAgent(provider llm.Provider, registry *tools.Registry, model string, pricePrompt float64, priceComp float64, eventStore events.EventStore) (*Agent, error) {
@@ -142,4 +144,12 @@ func (a *Agent) SetModel(model string, provider llm.Provider, pricePrompt, price
 	if a.compactor != nil {
 		a.compactor.UpdateModel(model, provider)
 	}
+}
+
+func (a *Agent) SetSensors(sr *sensors.Registry) {
+	a.sensorRegistry = sr
+}
+
+func (a *Agent) Sensors() *sensors.Registry {
+	return a.sensorRegistry
 }

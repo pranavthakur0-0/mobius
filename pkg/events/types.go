@@ -14,6 +14,7 @@ const (
 	EventToolCall         EventType = "tool_call"
 	EventToolResult       EventType = "tool_result"
 	EventSummary          EventType = "summary"
+	EventSensorResult     EventType = "sensor_result"
 )
 
 // Event represents an immutable fact in the agent's timeline.

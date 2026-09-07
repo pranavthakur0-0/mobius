@@ -9,6 +9,7 @@ import (
 	"mobius/pkg/events"
 	"mobius/pkg/guides"
 	"mobius/pkg/llm"
+	"mobius/pkg/sensors"
 	"mobius/pkg/session"
 	"mobius/pkg/tools"
 	"os"
@@ -59,6 +60,12 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error: Failed to create agent: %v\n", err)
 		os.Exit(1)
+	}
+
+	// 2b. Initialize sensors from AGENTS.md if present
+	if agentsData, err := os.ReadFile("AGENTS.md"); err == nil {
+		sensorReg := sensors.NewRegistryFromGuide(".", string(agentsData))
+		defaultAgent.SetSensors(sensorReg)
 	}
 
 	defaultSess := session.NewSession(defaultAgent.ThreadID(), "default", defaultAgent, systemPrompt)

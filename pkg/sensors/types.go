@@ -11,10 +11,11 @@ const (
 )
 
 type Verdict struct {
-	Passed    bool
-	Output    string
-	Retryable bool
-	Duration  time.Duration
+	SensorName string
+	Passed     bool
+	Output     string
+	Retryable  bool
+	Duration   time.Duration
 }
 
 type Sensor interface {

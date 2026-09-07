@@ -7,6 +7,8 @@ import (
 	"mobius/pkg/artifact"
 	"mobius/pkg/events"
 	"mobius/pkg/llm"
+	"mobius/pkg/sensors"
+	"strings"
 )
 
 func (a *Agent) Run(ctx context.Context, c *agentctx.ConversationContext, userInstruction string) (string, error) {
@@ -23,6 +25,9 @@ func (a *Agent) Run(ctx context.Context, c *agentctx.ConversationContext, userIn
 	}
 
 	fmt.Printf("[Goal] %s\n\n", userInstruction)
+
+	consecutiveSensorFailures := 0
+	const maxSensorRetries = 3
 
 	for step := 1; step <= a.maxSteps; step++ {
 		if err := ctx.Err(); err != nil {
@@ -64,6 +69,27 @@ func (a *Agent) Run(ctx context.Context, c *agentctx.ConversationContext, userIn
 		}
 
 		if len(resp.ToolCalls) == 0 {
+			// If verification checks are active and we had sensor failures, guard against premature completion
+			if a.sensorRegistry != nil && a.sensorRegistry.Count() > 0 && consecutiveSensorFailures > 0 {
+				fmt.Printf("[Sensor] Validating before completion...\n")
+				verdicts := a.sensorRegistry.RunAll(ctx)
+				var stillFailing []sensors.Verdict
+				for _, v := range verdicts {
+					if !v.Passed {
+						stillFailing = append(stillFailing, v)
+					}
+				}
+				if len(stillFailing) > 0 {
+					consecutiveSensorFailures++
+					if consecutiveSensorFailures <= maxSensorRetries {
+						sensorMsg := "[Verification Incomplete] You cannot conclude the task because verification checks are currently failing:\n\n" + formatSensorFailures(stillFailing)
+						fmt.Printf("%s\n\n", sensorMsg)
+						c.AddUserMessage(sensorMsg)
+						continue
+					}
+				}
+			}
+
 			if a.events != nil {
 				_ = a.events.Append(ctx, events.Event{
 					ThreadID: a.threadID,
@@ -76,7 +102,11 @@ func (a *Agent) Run(ctx context.Context, c *agentctx.ConversationContext, userIn
 			return resp.Content, nil
 		}
 
+		fileModified := false
 		for _, tc := range resp.ToolCalls {
+			if tc.Function.Name == "write_file" || tc.Function.Name == "edit_file" {
+				fileModified = true
+			}
 			fmt.Printf("[Tool] %s(%s)\n", tc.Function.Name, tc.Function.Arguments)
 			tool, err := a.registry.Get(tc.Function.Name)
 			var output string
@@ -92,7 +122,7 @@ func (a *Agent) Run(ctx context.Context, c *agentctx.ConversationContext, userIn
 				} else {
 					output = out
 				}
-			} // 👈 Added closing brace for tool execution
+			}
 			// Artifact interception: offload large outputs
 			if a.artifactStore != nil {
 				result := artifact.Intercept(a.artifactStore, a.threadID, tc.Function.Name, output)
@@ -130,6 +160,64 @@ func (a *Agent) Run(ctx context.Context, c *agentctx.ConversationContext, userIn
 				}
 			}
 		}
+
+		// Self-healing sensor verification
+		if fileModified && a.sensorRegistry != nil && a.sensorRegistry.Count() > 0 {
+			fmt.Printf("[Sensor] Running verification checks...\n")
+			verdicts := a.sensorRegistry.RunAll(ctx)
+			var failed []sensors.Verdict
+			for _, v := range verdicts {
+				if !v.Passed {
+					failed = append(failed, v)
+				}
+			}
+
+			if len(failed) > 0 {
+				consecutiveSensorFailures++
+				sensorMsg := formatSensorFailures(failed)
+				fmt.Printf("%s\n\n", sensorMsg)
+
+				if consecutiveSensorFailures >= maxSensorRetries {
+					sensorMsg += fmt.Sprintf("\n\n[Warning] Sensor check has failed %d consecutive times. Please carefully rethink your changes.", consecutiveSensorFailures)
+				}
+
+				c.AddUserMessage(sensorMsg)
+
+				if a.events != nil {
+					_ = a.events.Append(ctx, events.Event{
+						ThreadID: a.threadID,
+						Step:     step,
+						Type:     events.EventSensorResult,
+						Content:  sensorMsg,
+					})
+				}
+			} else {
+				consecutiveSensorFailures = 0
+				fmt.Printf("[Sensor] All %d verification checks passed.\n\n", len(verdicts))
+				if a.events != nil {
+					_ = a.events.Append(ctx, events.Event{
+						ThreadID: a.threadID,
+						Step:     step,
+						Type:     events.EventSensorResult,
+						Content:  fmt.Sprintf("All %d verification checks passed.", len(verdicts)),
+					})
+				}
+			}
+		}
 	}
 	return "", fmt.Errorf("agent reached maximum step budget (%d steps)", a.maxSteps)
+}
+
+func formatSensorFailures(failed []sensors.Verdict) string {
+	var sb strings.Builder
+	sb.WriteString("[Automatic Sensor Check Failed]\n")
+	for _, v := range failed {
+		name := v.SensorName
+		if name == "" {
+			name = "verification"
+		}
+		sb.WriteString(fmt.Sprintf("Sensor: %s\nOutput:\n%s\n", name, strings.TrimSpace(v.Output)))
+	}
+	sb.WriteString("\nThe code did not compile or pass verification. Please inspect the compiler/test error above and fix the issue before proceeding.")
+	return sb.String()
 }

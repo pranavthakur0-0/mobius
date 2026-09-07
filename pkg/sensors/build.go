@@ -40,15 +40,17 @@ func (s *CommandSensor) Check(ctx context.Context) (Verdict, error) {
     // 3. Did it pass?
     if err != nil {
         return Verdict{
-            Passed:    false,
-            Output:    string(out),
-            Retryable: true,
-            Duration:  duration,
+            SensorName: s.name,
+            Passed:     false,
+            Output:     string(out),
+            Retryable:  true,
+            Duration:   duration,
         }, nil
     }
     return Verdict{
-        Passed:   true,
-        Output:   string(out),
-        Duration: duration,
+        SensorName: s.name,
+        Passed:     true,
+        Output:     string(out),
+        Duration:   duration,
     }, nil
 }

@@ -10,6 +10,7 @@ import (
 	"mobius/pkg/events"
 	"mobius/pkg/guides"
 	"mobius/pkg/llm"
+	"mobius/pkg/sensors"
 	"mobius/pkg/session"
 	"mobius/pkg/tools"
 
@@ -161,6 +162,9 @@ func StartREPL(sm *session.Manager, registry *tools.Registry, cfg *llm.Config, a
 				fmt.Printf("Error: %v\n", err)
 				continue
 			}
+			if agentsData, err := os.ReadFile("AGENTS.md"); err == nil {
+				activeSession.Agent.SetSensors(sensors.NewRegistryFromGuide(".", string(agentsData)))
+			}
 			fmt.Printf("\nAGENTS.md updated successfully:\n\n%s\n", gen)
 		default:
 			// Normal AI Prompt
@@ -192,6 +196,9 @@ func handleNewChat(sm *session.Manager, registry *tools.Registry, cfg *llm.Confi
 	if err != nil {
 		fmt.Printf("Error creating agent: %v\n", err)
 		return
+	}
+	if agentsData, err := os.ReadFile("AGENTS.md"); err == nil {
+		newAgent.SetSensors(sensors.NewRegistryFromGuide(".", string(agentsData)))
 	}
 
 	newSess := sm.CreateSession("New Chat", newAgent)
